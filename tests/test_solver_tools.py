@@ -144,7 +144,7 @@ def test_get_left_most_ranges__no_fill_in_range__skip_to_next_range(data):
 
 
 def get_cell(state: CellState):
-    return Cell(Location(0, 0), state)
+    return Cell(state)
 
 
 def get_unset_cell():

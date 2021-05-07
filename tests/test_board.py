@@ -10,7 +10,7 @@ COLUMNS = 'columns'
 
 @pytest.fixture
 def supply_board_from_file():
-    board = Board.from_file('testdata\\img.png', True)
+    board = Board.from_file('testdata/N.dirty.png', True)
     return {
         BOARD: board,
         ROWS: len(board.get_column(0)),
