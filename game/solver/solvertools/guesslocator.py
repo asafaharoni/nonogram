@@ -3,7 +3,7 @@ from typing import NamedTuple
 
 from game.board.board import Board
 from game.board.cell import Location, CellState
-from game.solver.solvertools.solver_tools import BoardInfoAdder
+from game.solver.solvertools.info_adders import BoardInfoAdder
 
 
 class Guess(NamedTuple):

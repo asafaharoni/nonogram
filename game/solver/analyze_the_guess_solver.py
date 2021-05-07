@@ -4,7 +4,7 @@ from game.board.board import Board
 from game.board.cell import CellState, Location, RowInstructions, CellRow
 from game.solver.guess_solver import GuessSolver
 from game.solver.solvertools.guesslocator import Guess, ByOrderGuessLocator, MostInfoGuessLocator
-from game.solver.solvertools.solver_tools import RowInfoAdder, CellInfoToAdd
+from game.solver.solvertools.info_adders import CellInfoToAdd, RowInfoAdder
 
 
 class AnalyzeThenGuessSolver(GuessSolver):
