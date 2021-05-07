@@ -52,7 +52,7 @@ class AnalyzeThenGuessSolver(GuessSolver):
             self.start_wait_cycle()
             print(self.board.print_game_table(), flush=True)
             if guess:
-                print('Guessed: {}'.format(guess.location), flush=True)
+                print(f'Guessed: {guess.location}', flush=True)
 
     def solve_(self, guess: Guess = Guess(Location(-1, -1), CellState.FILL)):
         added_info = self.add_info()

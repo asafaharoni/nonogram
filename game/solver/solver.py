@@ -42,11 +42,9 @@ class Solver(ABC):
     def print_score_(self):
         if self.board.is_board_solved():
             print(self.board.print_game_table())
-            print('Good Job! The board was beat in {} steps, and {} guesses, in {:.2f} milli-seconds!'.format(
-                self.board.get_steps(), self.guesses, self.duration_in_milli_seconds))
+            print(
+                f'Good Job! The board was beat in {self.board.get_steps()} steps, and {self.guesses} guesses, in ' +
+                f'{self.duration_in_milli_seconds:.2f} milli-seconds!')
         else:
             print(self.board.print_game_table())
             print('Well... Something didn\'t work as planned...')
-
-
-
