@@ -156,7 +156,7 @@ class ListNode:
     def set_next(self, block):
         self.next = block
 
-    def next(self):
+    def get_next(self):
         return self.next
 
     def set_prev(self, prev):
@@ -185,6 +185,26 @@ class ListOfNodes:
 
     def __getitem__(self, item):
         return self.list[item]
+
+
+class ListOfNodesIter:
+    def __init__(self, node: ListNode, is_reversed: bool = False):
+        self.next_node = node
+        self.current_node = None
+        self.is_reversed = is_reversed
+
+    def __next__(self):
+        if self.next_node:
+            self.current_node = self.next_node
+            if self.is_reversed:
+                self.next_node = self.current_node.get_prev()
+            else:
+                self.next_node = self.current_node.get_next()
+            return self.current_node
+        raise StopIteration
+
+    def reverse(self):
+        self.is_reversed = not self.is_reversed
 
 
 class InstructionInfo(ListNode):
