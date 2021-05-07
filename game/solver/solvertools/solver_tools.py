@@ -175,6 +175,7 @@ class ListNode:
 class ListOfNodes:
     def __init__(self):
         self.list = []
+        self.reverse_iter = False
 
     def add_node(self, node: ListNode):
         added_node = copy.copy(node)
@@ -185,6 +186,17 @@ class ListOfNodes:
 
     def __getitem__(self, item):
         return self.list[item]
+
+    def __iter__(self):
+        if self.reverse_iter:
+            self.reverse_iter = False
+            return ListOfNodesIter(self.list[-1], True)
+        else:
+            return ListOfNodesIter(self.list[0])
+
+    def __call__(self, reverse_iter: bool):
+        self.reverse_iter = reverse_iter
+        return self
 
 
 class ListOfNodesIter:
