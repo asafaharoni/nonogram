@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Optional
 
 
 class RangeDict(dict):
@@ -54,19 +54,23 @@ class ListNode:
 
 
 class ListOfNodesIter:
-    def __init__(self, node: ListNode, is_reversed: bool = False):
-        self.next_node = node
-        self.current_node = node.get_next() if is_reversed else node.get_prev()
+    def __init__(self, start_node: ListNode = None, stop_node: ListNode = None, is_reversed: bool = False):
+        self.next_node = start_node
+        if start_node:
+            self.current_node = start_node.get_next() if is_reversed else start_node.get_prev()
         self.is_reversed = is_reversed
-
-    def is_reverse_next_possible_(self) -> bool:
-        return self.current_node is None and \
-                ((self.is_reversed and self.next_node.is_first()) or
-                 (not self.is_reversed and self.next_node.is_last() is None))
+        self.has_iterated_ = False
+        self.initial_is_reversed = is_reversed
+        self.stop_node = stop_node
 
     def __next__(self) -> ListNode:
-        if self.is_reverse_next_possible_():
+        if self.next_node is self.stop_node:
             raise StopIteration
+        if self.current_node is None:
+            if not self.has_iterated_ and self.initial_is_reversed != self.is_reversed:
+                raise StopIteration
+            else:
+                self.has_iterated_ = True
         if self.next_node:
             self.current_node = self.next_node
             self.set_next_node_()
@@ -89,8 +93,10 @@ class ListOfNodes:
     def __init__(self):
         self.list = []
         self.reverse_iter = False
+        self.stop_node_for_iter = None
+        self.start_node_for_iter = None
 
-    def add_node(self, node: ListNode) -> None:
+    def append(self, node: ListNode) -> None:
         self.list.append(node)
         if len(self.list) > 1:
             self.list[-2].set_next(self.list[-1])
@@ -100,15 +106,34 @@ class ListOfNodes:
         return self.list[item]
 
     def __iter__(self) -> ListOfNodesIter:
-        if self.reverse_iter:
-            self.reverse_iter = False
-            return ListOfNodesIter(self.list[-1], True)
-        else:
-            return ListOfNodesIter(self.list[0])
+        if len(self.list) == 0:
+            return ListOfNodesIter()
+        stop_node = self.stop_node_for_iter
+        start_node = self.start_node_for_iter
+        reverse_iter = self.reverse_iter
+        if start_node is None:
+            if self.reverse_iter:
+                start_node = self.list[-1]
+            else:
+                start_node = self.list[0]
+        self.stop_node_for_iter = None
+        self.start_node_for_iter = None
+        self.reverse_iter = False
+        return ListOfNodesIter(start_node, stop_node, reverse_iter)
 
-    def __reversed__(self) -> ListOfNodes:
+    def reverse(self) -> ListOfNodes:
         self.reverse_iter = True
         return self
 
+    def set_stop_node_for_iter(self, stop_node: ListNode):
+        self.stop_node_for_iter = stop_node
+
+    def set_start_node_for_iter(self, start_node: ListNode):
+        assert start_node in self.list
+        self.start_node_for_iter = start_node
+
     def __len__(self) -> int:
         return len(self.list)
+
+    def to_list(self):
+        return self.list

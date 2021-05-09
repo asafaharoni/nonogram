@@ -3,7 +3,6 @@ from typing import List
 import pytest
 
 from game.board.cell import CellState, Cell, CellRow
-from game.solver.solvertools.solver_tools import RangesManager
 
 UNSET_ROW = 'unset'
 FULL_ROW = 'full'

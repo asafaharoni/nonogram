@@ -16,29 +16,30 @@ class Node(ListNode):
 
 
 LIST = 'lst'
+INITIAL_LIST_SIZE = 15
 
 
 @pytest.fixture
 def data():
     lst = ListOfNodes()
-    for i in range(15):
-        lst.add_node(Node(i))
+    for i in range(INITIAL_LIST_SIZE):
+        lst.append(Node(i))
     return {LIST: lst}
 
 
 def test_add_node__successful(data):
     lst = data[LIST]
-    assert len(lst) == 15
-    lst.add_node(Node(15))
-    assert len(lst) == 16
-    lst.add_node(Node(16))
-    assert len(lst) == 17
+    assert len(lst) == INITIAL_LIST_SIZE
+    lst.append(Node(15))
+    assert len(lst) == INITIAL_LIST_SIZE + 1
+    lst.append(Node(16))
+    assert len(lst) == INITIAL_LIST_SIZE + 2
 
 
 def test_iterate_forward(data):
     lst = data[LIST]
     itr = iter(lst)
-    for i in range(15):
+    for i in range(INITIAL_LIST_SIZE):
         val = next(itr)
         assert val.get_val() == i
     with pytest.raises(StopIteration):
@@ -47,12 +48,35 @@ def test_iterate_forward(data):
 
 def test_iterate_backward(data):
     lst = data[LIST]
-    itr = iter(reversed(lst))
-    for i in range(14, -1, -1):
+    itr = iter(lst.reverse())
+    for i in range(INITIAL_LIST_SIZE - 1, -1, -1):
         val = next(itr)
         assert val.get_val() == i
     with pytest.raises(StopIteration):
         next(itr)
+    # lst should not be reversed after iter was called.
+    itr = iter(lst)
+    for i in range(INITIAL_LIST_SIZE):
+        val = next(itr)
+        assert val.get_val() == i
+    with pytest.raises(StopIteration):
+        next(itr)
+
+
+def test_iterate_backwards_single_item():
+    lst = ListOfNodes()
+    lst.append(Node(0))
+    itr = iter(lst)
+    val = next(itr)
+    assert val.get_val() == 0
+
+
+def test_iterator_for_loop(data):
+    lst = data[LIST]
+    for i, node in enumerate(lst):
+        assert node.get_val() == i
+    for i, node in enumerate(lst.reverse()):
+        assert node.get_val() == len(lst) - 1 - i
 
 
 def test_iterator_reverse(data):
@@ -72,10 +96,30 @@ def test_iterator_reverse(data):
     with pytest.raises(StopIteration):
         next(itr)
     itr.reverse()
-    for i in range(1, 15):
+    for i in range(1, INITIAL_LIST_SIZE):
         val = next(itr)
         assert val.get_val() == i
     with pytest.raises(StopIteration):
         next(itr)
     itr.reverse()
     assert next(itr).get_val() == 13
+
+
+def test_iterator_stop_node(data):
+    lst = data[LIST]
+    for stop_index in range(1, INITIAL_LIST_SIZE):
+        lst.set_stop_node_for_iter(lst[INITIAL_LIST_SIZE - stop_index])
+        itr = iter(lst)
+        for i in range(INITIAL_LIST_SIZE - stop_index):
+            val = next(itr)
+            assert val.get_val() == i
+        with pytest.raises(StopIteration):
+            next(itr)
+    # Check stop node changes after iteration.
+    itr = iter(lst)
+    for i in range(INITIAL_LIST_SIZE):
+        val = next(itr)
+        assert val.get_val() == i
+    with pytest.raises(StopIteration):
+        next(itr)
+

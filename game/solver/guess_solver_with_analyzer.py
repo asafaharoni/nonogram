@@ -2,7 +2,7 @@ from game.board.board import Board
 from game.board.cell import Location, CellState
 from game.solver.guess_solver import GuessSolver
 from game.solver.solver import Solver
-from game.solver.solvertools.solver_tools import RowAnalyzer
+from game.solver.solvertools.row_analyzer import RowAnalyzer
 from game.solver.solvertools.guesslocator import BestInfoGuessLocator, ByOrderGuessLocator, Guess
 
 

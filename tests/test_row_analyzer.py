@@ -1,8 +1,7 @@
 import pytest
 
-from game.board.cell import CellRow, RowInstructions, CellState, Cell, Location
-from game.solver.solvertools.solver_tools import RowAnalyzer
-from game.solver.solvertools.info_adders import CellInfoToAdd, RowInfoAdder
+from game.board.cell import CellRow, RowInstructions, CellState, Cell
+from game.solver.solvertools.row_analyzer import RowAnalyzer
 
 EMPTY_ROW = 'er'
 FALSE_MIDDLE_ROW = 'fmr'

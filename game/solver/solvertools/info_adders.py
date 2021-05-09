@@ -2,7 +2,7 @@ from typing import NamedTuple, List
 
 from game.board.board import Board, entry
 from game.board.cell import Cell, CellState, CellRow, RowInstructions
-from game.solver.solvertools.solver_tools import RowAnalyzer
+from game.solver.solvertools.row_analyzer import RowAnalyzer
 
 
 class CellInfoToAdd(NamedTuple):
