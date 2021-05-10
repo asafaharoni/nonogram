@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from game.board.cell import CellRow, CellState
 from game.solver.solvertools.collections import ListNode, RangeDict, ListOfNodes
@@ -46,19 +46,19 @@ class Block(ListNode, RangeInfo):
         self.containing_range = containing_range
 
 
-# TODO: Add logic for containing range.
 class BlockGroup(List[Block]):
     def add_(self, block: Block, index: int):
         if block is None:
             raise KeyError(f'No block to add to index {index}.')
+        assert block.get_containing_range() == self.get_containing_range()
         self.insert(index, block)
 
     def left_add(self, block: Block) -> None:
         assert len(self) > 0 and block == self[0].get_prev()
         self.add_(self[0].get_prev(), 0)
 
-    def right_add(self) -> None:
-        assert len(self) > 0
+    def right_add(self, block: Block) -> None:
+        assert len(self) > 0 and block == self[-1].get_next()
         self.add_(self[-1].get_next(), -1)
 
     def remove_(self, index: int) -> Block:
@@ -87,6 +87,11 @@ class BlockGroup(List[Block]):
         if len(self) == 0:
             return -1
         return self[-1].get_stop()
+
+    def get_containing_range(self) -> Optional[RangeInfo]:
+        if len(self) == 0:
+            return None
+        return self[0].get_containing_range()
 
 
 class RangesManager:
@@ -133,8 +138,3 @@ class RangesManager:
 
     def get_ranges_in_range(self, rng: RangeInfo) -> List[RangeInfo]:
         return [self.ranges[range_start] for range_start in self.ranges if self.ranges[range_start] in rng]
-
-    def are_indexes_in_same_range(self, index1: int, index2: int):
-        if index1 < 0 or index2 < 0:
-            return True
-        return self.ranges[index1] == self.ranges[index2]
