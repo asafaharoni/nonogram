@@ -58,6 +58,7 @@ class BlockGroup(List[Block]):
         self.add_(self[0].get_prev(), 0)
 
     def right_add(self, block: Block) -> None:
+        # if len(self) > 0:
         assert len(self) > 0 and block == self[-1].get_next()
         self.add_(self[-1].get_next(), -1)
 

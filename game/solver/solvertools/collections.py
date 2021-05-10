@@ -125,12 +125,14 @@ class ListOfNodes:
         self.reverse_iter = True
         return self
 
-    def set_stop_node_for_iter(self, stop_node: ListNode):
+    def set_stop_node_for_iter(self, stop_node: ListNode) -> ListOfNodes:
         self.stop_node_for_iter = stop_node
+        return self
 
-    def set_start_node_for_iter(self, start_node: ListNode):
+    def set_start_node_for_iter(self, start_node: ListNode) -> ListOfNodes:
         assert start_node in self.list
         self.start_node_for_iter = start_node
+        return self
 
     def __len__(self) -> int:
         return len(self.list)
