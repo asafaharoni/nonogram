@@ -60,7 +60,7 @@ class BlockGroup(List[Block]):
     def right_add(self, block: Block) -> None:
         # if len(self) > 0:
         assert len(self) > 0 and block == self[-1].get_next()
-        self.add_(self[-1].get_next(), -1)
+        self.add_(self[-1].get_next(), len(self))
 
     def remove_(self, index: int) -> Block:
         assert len(self) > 0

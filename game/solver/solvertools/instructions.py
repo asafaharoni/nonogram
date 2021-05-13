@@ -1,5 +1,4 @@
 from __future__ import annotations
-from collections import defaultdict
 from typing import List, Optional
 
 from game.board.cell import RowInstructions
@@ -44,31 +43,35 @@ class InstructionInfo(ListNode):
     def has_blocks(self) -> bool:
         return len(self.blocks) > 0
 
-    def propagate_range_left(self, full_propagate: bool = False) -> None:
+    def propagate_range_left(self, include_other_blocks: bool, full_propagate: bool = False) -> None:
         initial_max_stop = self.max_stop
-        self.max_stop = self.get_new_max_stop()
+        self.max_stop = self.get_new_max_stop(include_other_blocks)
         if self.prev and (self.max_stop != initial_max_stop or full_propagate):
-            self.prev.propagate_range_left()
+            self.prev.propagate_range_left(include_other_blocks=include_other_blocks)
 
-    def get_new_max_stop(self):
+    def get_new_max_stop(self, include_other_blocks: bool) -> int:
         max_stop_candidates = [candidate for candidate in [
             self.blocks.get_containing_range().get_stop() if len(self.blocks) > 0 else None,
             self.next.get_max_start() - 1 if self.next else None,
+            self.blocks[-1].get_next().get_start() - 1 if (
+                    include_other_blocks and len(self.blocks) and self.blocks[-1].get_next()) else None,
             self.blocks.get_start() + self.length if len(self.blocks) > 0 else None,
             self.initial_max_stop
         ] if candidate is not None]
         return min(max_stop_candidates)
 
-    def propagate_range_right(self, full_propagate: bool = False) -> None:
+    def propagate_range_right(self, include_other_blocks: bool, full_propagate: bool = False) -> None:
         initial_min_start = self.min_start
-        self.min_start = self.get_new_min_start()
+        self.min_start = self.get_new_min_start(include_other_blocks)
         if self.next and (self.min_start != initial_min_start or full_propagate):
-            self.next.propagate_range_right()
+            self.next.propagate_range_right(include_other_blocks=include_other_blocks)
 
-    def get_new_min_start(self) -> int:
+    def get_new_min_start(self, include_other_blocks: bool) -> int:
         min_start_candidates = [candidate for candidate in [
             self.blocks.get_containing_range().get_start() if len(self.blocks) > 0 else None,
             self.prev.get_min_stop() + 1 if self.prev else None,
+            self.blocks[0].get_prev().get_stop() + 1 if (
+                    include_other_blocks and len(self.blocks) and self.blocks[0].get_prev()) else None,
             self.blocks.get_stop() - self.length if len(self.blocks) > 0 else None,
             self.initial_min_start
         ] if candidate is not None]
@@ -79,16 +82,21 @@ class InstructionInfo(ListNode):
         if len(blocks_to_add) > 0:
             for block in blocks_to_add:
                 # TODO: Optimize s.t. not every iteration requires so many propagations.
-                while not self.add_right_block(block):
-                    blocks_to_remove.append(self.blocks.left_remove())
+                while not self.add_right_block(block, False):
+                    if len(self.blocks) > 0:
+                        blocks_to_remove.append(self.blocks.left_remove())
+                    else:
+                        blocks_to_remove.append(block)
+                        break
         else:
             if len(self.blocks) > 0:
                 blocks_to_remove.append(self.blocks.left_remove())
-            if self.get_new_max_stop() - self.get_new_min_start() < self.length:
+            if self.get_new_max_stop(include_other_blocks=True) - \
+                    self.get_new_min_start(include_other_blocks=True) < self.length:
                 while len(self.blocks) > 0:
                     blocks_to_remove.append(self.blocks.left_remove())
-        self.propagate_range_left()
-        self.propagate_range_right()
+        self.propagate_range_left(include_other_blocks=True)
+        self.propagate_range_right(include_other_blocks=True)
         if len(blocks_to_remove) > 0:
             if self.prev:
                 return self.prev.propagate_blocks_left(blocks_to_remove)
@@ -96,7 +104,7 @@ class InstructionInfo(ListNode):
             return None
         return self
 
-    def add_left_block(self, block: Block) -> bool:
+    def add_left_block(self, block: Block, include_other_blocks: bool) -> bool:
         if block.get_start() < self.min_start:
             return False
         else:
@@ -104,26 +112,28 @@ class InstructionInfo(ListNode):
                 self.blocks.append(block)
             else:
                 self.blocks.left_add(block)
-        self.propagate_range_left()
-        self.propagate_range_right()
+        self.propagate_range_left(include_other_blocks=False)
+        self.propagate_range_right(include_other_blocks=False)
         return True
 
-    def add_right_block(self, block: Block) -> bool:
-        if self.max_stop < block.get_stop():
+    def add_right_block(self, block: Block, include_other_blocks: bool) -> bool:
+        if self.max_stop < block.get_stop() or self.length < len(block):
             return False
         else:
             if len(self.blocks) == 0:
                 self.blocks.append(block)
             else:
                 self.blocks.right_add(block)
-        self.propagate_range_right()
-        self.propagate_range_left()
+        self.propagate_range_right(include_other_blocks=include_other_blocks)
+        self.propagate_range_left(include_other_blocks=include_other_blocks)
         return True
 
     def in_range(self, range_info: RangeInfo) -> bool:
         return self.min_start <= range_info.get_start() and range_info.get_stop() <= self.max_stop
 
     def __eq__(self, other):
+        if other is None:
+            return False
         return self.length == other.length and self.min_start == other.min_start and self.max_stop == other.max_stop
 
     def __hash__(self):
@@ -139,8 +149,8 @@ class InstructionInfo(ListNode):
             instruction = InstructionInfo(instruction_length, row_length)
             single_instruction_list.append(instruction)
         if len(single_instruction_list):
-            single_instruction_list[0].propagate_range_right(full_propagate=True)
-            single_instruction_list[-1].propagate_range_left(full_propagate=True)
+            single_instruction_list[0].propagate_range_right(include_other_blocks=True, full_propagate=True)
+            single_instruction_list[-1].propagate_range_left(include_other_blocks=True, full_propagate=True)
         return single_instruction_list
 
 
@@ -160,7 +170,7 @@ class InstructionManager:
             assert isinstance(ins, InstructionInfo)
             for block in self.blocks.reverse():
                 assert isinstance(block, Block)
-                while not ins.add_left_block(block):
+                while not ins.add_left_block(block, include_other_blocks=False):
                     if ins.get_prev() is None:
                         return ins
                     ins = ins.get_prev()
@@ -168,8 +178,3 @@ class InstructionManager:
 
     def get_instruction_info(self, instruction_index: int):
         return self.instructions[instruction_index]
-
-    def propagate_blocks_left(self, instruction: InstructionInfo) -> InstructionInfo:
-        instruction.propagate_blocks_left([])
-
-        return instruction

@@ -91,7 +91,7 @@ def test_instruction_manager__setup__successful_propagation_with_blocks():
 
 
 def test_instruction_manager__setup__successful_propagation_no_blocks():
-    bool_row = [None] * 30
+    bool_row: List[bool] = [None] * 30
     instructions = [1] * 10
     instruction_manager = get_instruction_manager(bool_row, instructions)
     for i, instruction_info in enumerate(instruction_manager):
@@ -129,47 +129,94 @@ def test_instruction_manager__setup__successful_propagation_last_instruction_no_
         assert not instruction_manager[i].has_blocks()
 
 
-def test_instruction_manager__propagate_blocks_left__simple_cases():
+def test_instruction_manager__propagate_blocks_left__single_fill():
     bool_row = [None] * 10 + [True] + [None] * 12
     instructions = [1] * 6
     im = get_instruction_manager(bool_row, instructions)
     for ins_index, instruction_info in enumerate(im):
         # Test propagate right:
-        assert instruction_info.get_min_start() == 2 * ins_index
-        assert instruction_info.get_max_start() == 2 * ins_index
-        assert instruction_info.get_min_stop() == 2 * ins_index + 1
-        assert instruction_info.get_max_stop() == 2 * ins_index + 1
-        if ins_index == len(instructions) - 1:
-            assert im[ins_index].has_blocks()
-        else:
-            assert not im[ins_index].has_blocks()
+        assert_instruction_info(instruction_info,
+                                min_start=2 * ins_index,
+                                max_stop=2 * ins_index + 1,
+                                has_blocks=ins_index == len(instructions) - 1)
 
     # First back propagation.
-    for instruction_with_block_index in range(4, 2, -1):
-        im.propagate_blocks_left(im[instruction_with_block_index + 1])
+    assert im[5].propagate_blocks_left() == im[4]
+    for instruction_with_block_index in range(4, -1, -1):
         left = instruction_with_block_index
         right = len(instructions) - instruction_with_block_index - 1
 
         # Check all instructions left to the one containing the block.
         for ins_index in range(instruction_with_block_index):
-            assert im[ins_index].get_min_start() == 2 * ins_index
-            assert im[ins_index].get_min_stop() == 2 * ins_index + 1
-            assert im[ins_index].get_max_start() == 10 + 2 * (ins_index - left)
-            assert im[ins_index].get_max_stop() == 11 + 2 * (ins_index - left)
-            assert not im[ins_index].has_blocks()
+            assert_instruction_info(im[ins_index],
+                                    min_start=2 * ins_index,
+                                    max_stop=11 + 2 * (ins_index - left),
+                                    has_blocks=False)
 
         # Check instruction with block.
-        instruction_info = im[instruction_with_block_index]
-        assert instruction_info.get_min_start() == 10
-        assert instruction_info.get_min_stop() == 11
-        assert instruction_info.get_max_start() == 10
-        assert instruction_info.get_max_stop() == 11
-        assert instruction_info.has_blocks()
+        assert_instruction_info(im[instruction_with_block_index],
+                                min_start=10,
+                                max_stop=11,
+                                has_blocks=True)
 
         # Check all instructions right to the one containing the block.
         for loop_index, ins_index in enumerate(range(instruction_with_block_index + 1, len(instructions))):
-            assert im[ins_index].get_min_start() == 12 + 2 * loop_index
-            assert im[ins_index].get_min_stop() == 13 + 2 * loop_index
-            assert im[ins_index].get_max_start() == 24 - 2 * (right - loop_index)
-            assert im[ins_index].get_max_stop() == 25 - 2 * (right - loop_index)
-            assert not im[ins_index].has_blocks()
+            assert_instruction_info(im[ins_index],
+                                    min_start=12 + 2 * loop_index,
+                                    max_stop=25 - 2 * (right - loop_index),
+                                    has_blocks=False)
+
+        # Propagate.
+        if instruction_with_block_index > 0:
+            assert im[instruction_with_block_index].propagate_blocks_left() == im[instruction_with_block_index - 1]
+        else:
+            assert im[0].propagate_blocks_left() is None
+
+
+def assert_instruction_info(ii: InstructionInfo, min_start: int, max_stop: int, has_blocks: bool):
+    assert ii.get_min_start() == min_start
+    assert ii.get_max_stop() == max_stop
+    assert ii.has_blocks() == has_blocks
+
+
+def test_instruction_manager__propagate_blocks_left__skip_instrucion_of_one():
+    bool_row = [None] * 10 + [True] * 2 + [None] * 8
+    instructions = [2, 1, 2]
+    im = get_instruction_manager(bool_row, instructions)
+
+    # Verify setup.
+    assert_instruction_info(im[0], min_start=0, max_stop=7, has_blocks=False)
+    assert_instruction_info(im[1], min_start=3, max_stop=9, has_blocks=False)
+    assert_instruction_info(im[2], min_start=10, max_stop=12, has_blocks=True)
+
+    # First propagation.
+    assert im[2].propagate_blocks_left() == im[0]
+
+    # Verify setup.
+    assert_instruction_info(im[0], min_start=10, max_stop=12, has_blocks=True)
+    assert_instruction_info(im[1], min_start=13, max_stop=17, has_blocks=False)
+    assert_instruction_info(im[2], min_start=15, max_stop=20, has_blocks=False)
+
+    # Second propagation should fail.
+    assert im[0].propagate_blocks_left() is None
+
+
+def test_instruction_manager__propagate_blocks_left__multiple_blocks():
+    bool_row: List[bool] = [None] * 10 + [True, None, True, False] + [None] * 6
+    instructions = [3, 3]
+    im = get_instruction_manager(bool_row, instructions)
+
+    # Verify setup.
+    assert_instruction_info(im[0], min_start=0, max_stop=9, has_blocks=False)
+    assert_instruction_info(im[1], min_start=10, max_stop=13, has_blocks=True)
+
+    # First propagation.
+    assert im[1].propagate_blocks_left() == im[0]
+
+    # Verify setup.
+    assert_instruction_info(im[0], min_start=10, max_stop=13, has_blocks=True)
+    assert_instruction_info(im[1], min_start=14, max_stop=20, has_blocks=False)
+
+    # Second propagation should fail.
+    assert im[0].propagate_blocks_left() is None
+
